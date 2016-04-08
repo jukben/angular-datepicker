@@ -62,7 +62,6 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
         return datePickerUtils.getDate(scope, attrs, name);
       }
 
-      console.log(scope, attrs, 'lol');
       var arrowClick = false,
         tz = scope.tz = attrs.timezone,
         createMoment = datePickerUtils.createMoment,
@@ -950,7 +949,6 @@ Module.directive('dateTime', ['$compile', '$document', '$filter', 'dateTimeConfi
 angular.module('datePicker').run(['$templateCache', function($templateCache) {
 $templateCache.put('templates/datepicker.html',
     "<div ng-switch=\"view\">\n" +
-    "  <scope>{{this | json}}</scope>\n" +
     "  <div ng-switch-when=\"date\">\n" +
     "    <table>\n" +
     "      <thead>\n" +
@@ -1056,7 +1054,7 @@ $templateCache.put('templates/datepicker.html',
     "      </tbody>\n" +
     "    </table>\n" +
     "  </div>\n" +
-    "</div>\n"
+    "</div>"
   );
 
 }]);
