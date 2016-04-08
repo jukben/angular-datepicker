@@ -2,11 +2,12 @@
 var Module = angular.module('datePicker');
 
 Module.directive('dateRange', ['$compile', 'datePickerUtils', 'dateTimeConfig', function ($compile, datePickerUtils, dateTimeConfig) {
-  function getTemplate(attrs, id, model, min, max) {
+  function getTemplate(attrs, id, model, min, max, endOfDay) {
     return dateTimeConfig.template(angular.extend(attrs, {
       ngModel: model,
       minDate: min && moment.isMoment(min) ? min.format() : false,
-      maxDate: max && moment.isMoment(max) ? max.format() : false
+      maxDate: max && moment.isMoment(max) ? max.format() : false,
+      endOfDay: endOfDay
     }), id);
   }
 
@@ -74,7 +75,7 @@ Module.directive('dateRange', ['$compile', 'datePickerUtils', 'dateTimeConfig', 
       var template = '<div><table class="date-range"><tr><td valign="top">' +
         getTemplate(attrs, pickerIDs[0], 'start', false, scope.end) +
         '</td><td valign="top">' +
-        getTemplate(attrs, pickerIDs[1], 'end', scope.start, false) +
+        getTemplate(attrs, pickerIDs[1], 'end', scope.start, false, true) +
         '</td></tr></table></div>';
 
       var picker = $compile(template)(scope);

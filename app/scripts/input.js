@@ -23,6 +23,7 @@ Module.constant('dateTimeConfig', {
       (attrs.ngModel ? 'ng-model="' + attrs.ngModel + '" ' : '') +
       (attrs.firstDay ? 'first-day="' + attrs.firstDay + '" ' : '') +
       (attrs.timezone ? 'timezone="' + attrs.timezone + '" ' : '') +
+      (attrs.endOfDay ? 'end-of-day="' + attrs.endOfDay + '" ' : '') +
       'class="date-picker-date-time"></div>';
   },
   format: 'YYYY-MM-DD HH:mm',

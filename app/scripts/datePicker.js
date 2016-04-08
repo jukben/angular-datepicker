@@ -73,6 +73,7 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
         pickerID = element[0].id,
         now = scope.now = createMoment(),
         selected = scope.date = createMoment(scope.model || now),
+        endOfDay = attrs.endOfDay === 'true',
         autoclose = attrs.autoClose === 'true',
       // Either gets the 1st day from the attributes, or asks moment.js to give it to us as it is localized.
         firstDay = attrs.firstDay && attrs.firstDay >= 0 && attrs.firstDay <= 6 ? parseInt(attrs.firstDay, 10) : moment().weekday(0).day(),
@@ -164,8 +165,8 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
             scope.months = datePickerUtils.getVisibleMonths(date);
             break;
           case 'date':
-            scope.weekdays = scope.weekdays || datePickerUtils.getDaysOfWeek();
-            scope.weeks = datePickerUtils.getVisibleWeeks(date);
+            scope.weekdays = scope.weekdays || datePickerUtils.getDaysOfWeek(moment(), endOfDay);
+            scope.weeks = datePickerUtils.getVisibleWeeks(date, endOfDay);
             break;
           case 'hours':
             scope.hours = datePickerUtils.getVisibleHours(date);

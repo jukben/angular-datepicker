@@ -21,7 +21,7 @@ angular.module('datePicker').factory('datePickerUtils', function () {
       }
       return minutes;
     },
-    getVisibleWeeks: function (m) {
+    getVisibleWeeks: function (m, endOfDay) {
       m = moment(m);
       var startYear = m.year(),
         startMonth = m.month();
@@ -41,7 +41,7 @@ angular.module('datePicker').factory('datePickerUtils', function () {
         if (m.year() === startYear && m.month() > startMonth) {
           break;
         }
-        weeks.push(this.getDaysOfWeek(m));
+        weeks.push(this.getDaysOfWeek(m, endOfDay));
         m.add(7, 'd');
       }
       return weeks;
@@ -70,7 +70,11 @@ angular.module('datePicker').factory('datePickerUtils', function () {
       }
       return years;
     },
-    getDaysOfWeek: function (m) {
+    getDaysOfWeek: function (m, endOfDay) {
+      if (endOfDay === undefined){
+        endOfDay = false;
+      }
+
       m = m ? m : (tz ? moment.tz(tz).day(firstDay) : moment().day(firstDay));
 
       var year = m.year(),
@@ -81,11 +85,16 @@ angular.module('datePicker').factory('datePickerUtils', function () {
         offset = m.utcOffset() / 60,
         actualOffset;
 
+      var hour = (!endOfDay) ? 0 - offset : 23 - offset;
+      var minutes = (!endOfDay) ? 0 : 55;
+
       for (var i = 0; i < 7; i++) {
-        pushedDate = createNewDate(year, month, day, 0 - offset, 0, false);
+
+        pushedDate = createNewDate(year, month, day, hour, minutes, false);
         actualOffset = pushedDate.utcOffset() / 60;
         if (actualOffset !== offset) {
-          pushedDate = createNewDate(year, month, day, 0 - actualOffset, 0, false);
+          hour = 0 - actualOffset;
+          pushedDate = createNewDate(year, month, day, hour, minutes, false);
         }
         days.push(pushedDate);
         day++;
