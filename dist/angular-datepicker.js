@@ -104,11 +104,13 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
       };
 
       scope.selectDate = function (date) {
+        var secondClick = false;
         if (attrs.disabled) {
           return false;
         }
         if (isSame(scope.date, date)) {
           date = scope.date;
+          secondClick = true;
         }
         date = clipDate(date);
         if (!date) {
@@ -116,7 +118,10 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
         }
         scope.date = date;
 
-        var nextView = scope.views[scope.views.indexOf(scope.view) + 1];
+        // Change view from date only after a second click on day
+        var overrideNextView = (scope.view === 'date' && !secondClick) ? 'date' : '';
+
+        var nextView = overrideNextView || scope.views[scope.views.indexOf(scope.view) + 1];
         if ((!nextView || partial) || scope.model) {
           setDate(date);
         }
