@@ -141,12 +141,12 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
       };
 
       scope.setStartOfDay = function () {
-        scope.date.startOf('day');
+        setDate(moment(scope.date).startOf('day'));
         prepareViewData();
       };
 
       scope.setEndOfDay = function () {
-        scope.date.endOf('day');
+        setDate(moment(scope.date).endOf('day'));
         prepareViewData();
       };
 
