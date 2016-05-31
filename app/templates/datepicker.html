@@ -75,9 +75,19 @@
       <tbody>
       <tr>
         <td colspan="7">
+          <div ng-if="rangeStart"
+                class="datepicker-range-button"
+                ng-class="{'active' : isStartOfDay()}"
+                ng-click="setStartOfDay()"
+                translate>Start of day</div>
           <span ng-repeat="hour in hours"
                 ng-class="classes[$index]"
                 ng-click="selectDate(hour)" ng-bind="hour|mFormat:'HH:mm':tz"></span>
+          <div ng-if="rangeEnd"
+                class="datepicker-range-button"
+                ng-class="{'active' : isEndOfDay()}"
+                ng-click="setEndOfDay()"
+                translate>End of day</div>
         </td>
       </tr>
       </tbody>

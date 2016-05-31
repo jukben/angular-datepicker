@@ -73,7 +73,8 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
         pickerID = element[0].id,
         now = scope.now = createMoment(),
         selected = scope.date = createMoment(scope.model || now),
-        endOfDay = attrs.endOfDay === 'true',
+        rangeStart = attrs.rangeStart === 'true',
+        rangeEnd = attrs.rangeEnd === 'true',
         autoclose = attrs.autoClose === 'true',
       // Either gets the 1st day from the attributes, or asks moment.js to give it to us as it is localized.
         firstDay = attrs.firstDay && attrs.firstDay >= 0 && attrs.firstDay <= 6 ? parseInt(attrs.firstDay, 10) : moment().weekday(0).day(),
@@ -84,11 +85,14 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
         isNow,
         inValidRange;
 
-      datePickerUtils.setParams(tz, firstDay);
+      datePickerUtils.setParams(tz, firstDay, rangeEnd);
 
       if (!scope.model) {
         selected.minute(Math.ceil(selected.minute() / step) * step).second(0);
       }
+
+      scope.rangeStart = rangeStart;
+      scope.rangeEnd = rangeEnd;
 
       scope.template = attrs.template || datePickerConfig.template;
 
@@ -136,6 +140,24 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
         }
       };
 
+      scope.setStartOfDay = function () {
+        scope.date.startOf('day');
+        prepareViewData();
+      };
+
+      scope.setEndOfDay = function () {
+        scope.date.endOf('day');
+        prepareViewData();
+      };
+
+      scope.isStartOfDay = function () {
+        return scope.date.isSame(moment(scope.date).startOf('day'), 'second');
+      };
+
+      scope.isEndOfDay = function () {
+        return scope.date.isSame(moment(scope.date).endOf('day'), 'second');
+      };
+
       setDate = function (date) {
         if (date) {
           scope.model = date;
@@ -153,7 +175,7 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
 
       function update() {
         var view = scope.view;
-        datePickerUtils.setParams(tz, firstDay);
+        datePickerUtils.setParams(tz, firstDay, rangeEnd);
 
         if (scope.model && !arrowClick) {
           scope.date = createMoment(scope.model);
@@ -170,8 +192,8 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
             scope.months = datePickerUtils.getVisibleMonths(date);
             break;
           case 'date':
-            scope.weekdays = scope.weekdays || datePickerUtils.getDaysOfWeek(moment(), endOfDay);
-            scope.weeks = datePickerUtils.getVisibleWeeks(date, endOfDay);
+            scope.weekdays = scope.weekdays || datePickerUtils.getDaysOfWeek(moment());
+            scope.weeks = datePickerUtils.getVisibleWeeks(date);
             break;
           case 'hours':
             scope.hours = datePickerUtils.getVisibleHours(date);
@@ -206,7 +228,7 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
           classes = [], classList = '',
           i, j;
 
-        datePickerUtils.setParams(tz, firstDay);
+        datePickerUtils.setParams(tz, firstDay, rangeEnd);
 
         if (view === 'date') {
           var weeks = scope.weeks, week;
@@ -231,11 +253,13 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
         } else {
           var params = datePickerConfig.viewConfig[view],
             dates = scope[params[0]],
-            compareFunc = params[1];
+            compareFunc = params[1],
+            suppressActiveClass = view === 'hours' &&
+              ((scope.rangeStart && scope.isStartOfDay()) || (scope.rangeEnd && scope.isEndOfDay()));
 
           for (i = 0; i < dates.length; i++) {
             classList = '';
-            if (datePickerUtils[compareFunc](date, dates[i])) {
+            if (datePickerUtils[compareFunc](date, dates[i]) && !suppressActiveClass) {
               classList += 'active';
             }
             if (isNow(dates[i], view)) {
@@ -367,10 +391,14 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
 }]);
 
 angular.module('datePicker').factory('datePickerUtils', function () {
-  var tz, firstDay;
-  var createNewDate = function (year, month, day, hour, minute) {
+  var tz, firstDay, endOfDay;
+  var createNewDate = function (year, month, day, hour, minute, disableTimeOverride) {
     var utc = Date.UTC(year | 0, month | 0, day | 0, hour | 0, minute | 0);
-    return tz ? moment.tz(utc, tz) : moment(utc);
+    var date = tz ? moment.tz(utc, tz) : moment(utc);
+    if (endOfDay && !disableTimeOverride) {
+      date.endOf('day');
+    }
+    return date;
   };
 
   return {
@@ -383,12 +411,12 @@ angular.module('datePicker').factory('datePickerUtils', function () {
         minutes = [], minute;
 
       for (minute = 0; minute < 60; minute += step) {
-        pushedDate = createNewDate(year, month, day, hour - offset, minute);
+        pushedDate = createNewDate(year, month, day, hour - offset, minute, true);
         minutes.push(pushedDate);
       }
       return minutes;
     },
-    getVisibleWeeks: function (m, endOfDay) {
+    getVisibleWeeks: function (m) {
       m = moment(m);
       var startYear = m.year(),
         startMonth = m.month();
@@ -408,7 +436,7 @@ angular.module('datePicker').factory('datePickerUtils', function () {
         if (m.year() === startYear && m.month() > startMonth) {
           break;
         }
-        weeks.push(this.getDaysOfWeek(m, endOfDay));
+        weeks.push(this.getDaysOfWeek(m));
         m.add(7, 'd');
       }
       return weeks;
@@ -437,10 +465,7 @@ angular.module('datePicker').factory('datePickerUtils', function () {
       }
       return years;
     },
-    getDaysOfWeek: function (m, endOfDay) {
-      if (endOfDay === undefined){
-        endOfDay = false;
-      }
+    getDaysOfWeek: function (m) {
 
       m = m ? m : (tz ? moment.tz(tz).day(firstDay) : moment().day(firstDay));
 
@@ -452,8 +477,8 @@ angular.module('datePicker').factory('datePickerUtils', function () {
         offset = m.utcOffset() / 60,
         actualOffset;
 
-      var hour = (!endOfDay) ? 0 - offset : 23 - offset;
-      var minutes = (!endOfDay) ? 0 : 55;
+      var hour = 0 - offset;
+      var minutes = 0;
 
       for (var i = 0; i < 7; i++) {
 
@@ -476,10 +501,10 @@ angular.module('datePicker').factory('datePickerUtils', function () {
         actualOffset;
 
       for (var month = 0; month < 12; month++) {
-        pushedDate = createNewDate(year, month, 1, 0 - offset, 0, false);
+        pushedDate = createNewDate(year, month, 1, 0 - offset, 0);
         actualOffset = pushedDate.utcOffset() / 60;
         if (actualOffset !== offset) {
-          pushedDate = createNewDate(year, month, 1, 0 - actualOffset, 0, false);
+          pushedDate = createNewDate(year, month, 1, 0 - actualOffset, 0);
         }
         months.push(pushedDate);
       }
@@ -494,10 +519,10 @@ angular.module('datePicker').factory('datePickerUtils', function () {
         offset = m.utcOffset() / 60;
 
       for (hour = 0; hour < 24; hour++) {
-        pushedDate = createNewDate(year, month, day, hour - offset, 0, false);
+        pushedDate = createNewDate(year, month, day, hour - offset, 0, true);
         actualOffset = pushedDate.utcOffset() / 60;
         if (actualOffset !== offset) {
-          pushedDate = createNewDate(year, month, day, hour - actualOffset, 0, false);
+          pushedDate = createNewDate(year, month, day, hour - actualOffset, 0, true);
         }
         hours.push(pushedDate);
       }
@@ -525,9 +550,10 @@ angular.module('datePicker').factory('datePickerUtils', function () {
     isSameMinutes: function (model, date) {
       return this.isSameHour(model, date) && model.minutes() === date.minutes();
     },
-    setParams: function (zone, fd) {
+    setParams: function (zone, fd, ed) {
       tz = zone;
       firstDay = fd;
+      endOfDay = ed;
     },
     scopeSearch: function (scope, name, comparisonFn) {
       var parentScope = scope,
@@ -617,12 +643,13 @@ angular.module('datePicker').factory('datePickerUtils', function () {
 var Module = angular.module('datePicker');
 
 Module.directive('dateRange', ['$compile', 'datePickerUtils', 'dateTimeConfig', function ($compile, datePickerUtils, dateTimeConfig) {
-  function getTemplate(attrs, id, model, min, max, endOfDay) {
+  function getTemplate(attrs, id, model, min, max, rangeStart, rangeEnd) {
     return dateTimeConfig.template(angular.extend(attrs, {
       ngModel: model,
       minDate: min && moment.isMoment(min) ? min.format() : false,
       maxDate: max && moment.isMoment(max) ? max.format() : false,
-      endOfDay: endOfDay
+      rangeStart: rangeStart,
+      rangeEnd: rangeEnd
     }), id);
   }
 
@@ -688,9 +715,9 @@ Module.directive('dateRange', ['$compile', 'datePickerUtils', 'dateTimeConfig', 
       attrs.onSetDate = 'dateChange';
 
       var template = '<div><table class="date-range"><tr><td valign="top">' +
-        getTemplate(attrs, pickerIDs[0], 'start', false, scope.end) +
+        getTemplate(attrs, pickerIDs[0], 'start', false, scope.end, true, false) +
         '</td><td valign="top">' +
-        getTemplate(attrs, pickerIDs[1], 'end', scope.start, false, true) +
+        getTemplate(attrs, pickerIDs[1], 'end', scope.start, false, false, true) +
         '</td></tr></table></div>';
 
       var picker = $compile(template)(scope);
@@ -723,7 +750,8 @@ Module.constant('dateTimeConfig', {
       (attrs.ngModel ? 'ng-model="' + attrs.ngModel + '" ' : '') +
       (attrs.firstDay ? 'first-day="' + attrs.firstDay + '" ' : '') +
       (attrs.timezone ? 'timezone="' + attrs.timezone + '" ' : '') +
-      (attrs.endOfDay ? 'end-of-day="' + attrs.endOfDay + '" ' : '') +
+      (attrs.rangeStart ? 'range-start="' + attrs.rangeStart + '" ' : '') +
+      (attrs.rangeEnd ? 'range-end="' + attrs.rangeEnd + '" ' : '') +
       'class="date-picker-date-time"></div>';
   },
   format: 'YYYY-MM-DD HH:mm',
@@ -1030,9 +1058,19 @@ $templateCache.put('templates/datepicker.html',
     "      <tbody>\n" +
     "      <tr>\n" +
     "        <td colspan=\"7\">\n" +
+    "          <div ng-if=\"rangeStart\"\n" +
+    "                class=\"datepicker-range-button\"\n" +
+    "                ng-class=\"{'active' : isStartOfDay()}\"\n" +
+    "                ng-click=\"setStartOfDay()\"\n" +
+    "                translate>Start of day</div>\n" +
     "          <span ng-repeat=\"hour in hours\"\n" +
     "                ng-class=\"classes[$index]\"\n" +
     "                ng-click=\"selectDate(hour)\" ng-bind=\"hour|mFormat:'HH:mm':tz\"></span>\n" +
+    "          <div ng-if=\"rangeEnd\"\n" +
+    "                class=\"datepicker-range-button\"\n" +
+    "                ng-class=\"{'active' : isEndOfDay()}\"\n" +
+    "                ng-click=\"setEndOfDay()\"\n" +
+    "                translate>End of day</div>\n" +
     "        </td>\n" +
     "      </tr>\n" +
     "      </tbody>\n" +
@@ -1059,7 +1097,7 @@ $templateCache.put('templates/datepicker.html',
     "      </tbody>\n" +
     "    </table>\n" +
     "  </div>\n" +
-    "</div>"
+    "</div>\n"
   );
 
 }]);
