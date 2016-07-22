@@ -125,6 +125,10 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
         // Change view from date only after a second click on day
         var overrideNextView = (scope.view === 'date' && !secondClick) ? 'date' : '';
 
+        if(overrideNextView) {
+          prepareViewData();
+        }
+
         var nextView = overrideNextView || scope.views[scope.views.indexOf(scope.view) + 1];
         if ((!nextView || partial) || scope.model) {
           setDate(date);
