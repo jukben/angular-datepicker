@@ -196,7 +196,7 @@ Module.directive('datePicker', ['datePickerConfig', 'datePickerUtils', function 
             scope.months = datePickerUtils.getVisibleMonths(date);
             break;
           case 'date':
-            scope.weekdays = scope.weekdays || datePickerUtils.getDaysOfWeek(moment());
+            scope.weekdays = scope.weekdays || datePickerUtils.getDaysOfWeek();
             scope.weeks = datePickerUtils.getVisibleWeeks(date);
             break;
           case 'hours':
